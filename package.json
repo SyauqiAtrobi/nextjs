@@ -7,7 +7,6 @@
     "build": "npm install --legacy-peer-deps && next build",
     "start": "next start",
     "lint": "next lint",
-    "prepare": "husky install",
     "test": "echo No tests found.",
     "format": "prettier --write --ignore-path=.gitignore .",
     "format:check": "prettier --check --ignore-path=.gitignore .",
