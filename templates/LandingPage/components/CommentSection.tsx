@@ -1,27 +1,58 @@
-"use client";
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  FormEvent,
+  CSSProperties,
+  JSX,
+} from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FaStar, FaSpinner } from "react-icons/fa";
 
+interface Comment {
+  _id: string;
+  name: string;
+  message: string;
+  rating: number;
+  createdAt: string;
+}
+
+interface AverageRating {
+  value: number;
+  total: number;
+}
+
+interface FormData {
+  name: string;
+  message: string;
+  rating: number;
+}
+
 export default function CommentSection() {
   const { theme } = useTheme();
-  const [comments, setComments] = useState([]);
-  const [form, setForm] = useState({ name: "", message: "", rating: 0 });
-  const [hoverRating, setHoverRating] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [averageRating, setAverageRating] = useState(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [form, setForm] = useState<FormData>({
+    name: "",
+    message: "",
+    rating: 0,
+  });
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [averageRating, setAverageRating] = useState<AverageRating | null>(
+    null
+  );
 
   // warna berdasarkan tema
   const colors = {
-    bgPage: theme === "light" ? "#F3F4F6" : "#111827", // gray-100 / gray-900
-    bgCard: theme === "light" ? "#FFFFFF" : "#1F2937", // white / gray-800
-    bgComment: theme === "light" ? "#F9FAFB" : "#374151", // gray-50 / gray-700
-    border: theme === "light" ? "#D1D5DB" : "#4B5563", // gray-300 / gray-600
-    text: theme === "light" ? "#111827" : "#F9FAFB", // gray-900 / gray-50
-    textSecondary: theme === "light" ? "#6B7280" : "#D1D5DB", // gray-500 / gray-400
-    textMuted: theme === "light" ? "#4B5563" : "#9CA3AF", // gray-700 / gray-400
-    btnBg: theme === "light" ? "#2563EB" : "#3B82F6", // blue-600 / blue-500
-    btnBgHover: theme === "light" ? "#1D4ED8" : "#2563EB", // blue-700 / blue-600
+    bgPage: theme === "light" ? "#F3F4F6" : "#111827",
+    bgCard: theme === "light" ? "#FFFFFF" : "#1F2937",
+    bgComment: theme === "light" ? "#F9FAFB" : "#374151",
+    border: theme === "light" ? "#D1D5DB" : "#4B5563",
+    text: theme === "light" ? "#111827" : "#F9FAFB",
+    textSecondary: theme === "light" ? "#6B7280" : "#D1D5DB",
+    textMuted: theme === "light" ? "#4B5563" : "#9CA3AF",
+    btnBg: theme === "light" ? "#2563EB" : "#3B82F6",
+    btnBgHover: theme === "light" ? "#1D4ED8" : "#2563EB",
   };
 
   useEffect(() => {
@@ -31,23 +62,23 @@ export default function CommentSection() {
   const fetchComments = async () => {
     try {
       const res = await fetch("/api/comments/get");
-      const {
-        comments: dataComments,
-        averageRating,
-        totalRatings,
-      } = await res.json();
-      if (Array.isArray(dataComments)) {
-        setComments(dataComments);
-        setAverageRating({ value: averageRating, total: totalRatings });
-      }
+      const data = await res.json();
+      const dataComments: Comment[] = data.comments;
+      const apiAvg: number = data.averageRating;
+      const apiTotal: number = data.totalRatings;
+      setComments(dataComments);
+      setAverageRating({ value: apiAvg, total: apiTotal });
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (form.rating === 0) return alert("Pilih rating dulu, ya!");
+    if (form.rating === 0) {
+      alert("Pilih rating dulu, ya!");
+      return;
+    }
     setLoading(true);
     try {
       await fetch("/api/comments/post", {
@@ -64,17 +95,21 @@ export default function CommentSection() {
     setLoading(false);
   };
 
-  // style bintang manual
-  const starStyle = (active) => ({
+  const starStyle = (active: boolean): CSSProperties => ({
     cursor: "pointer",
     color: active ? "#FBBF24" : colors.textMuted,
     transform: active ? "scale(1.1)" : "scale(1)",
     transition: "transform 0.15s, color 0.15s",
   });
 
-  const renderStars = (currentRating, onClick, onMouseEnter, onMouseLeave) => (
+  const renderStars = (
+    currentRating: number,
+    onClick: (rating: number) => void,
+    onMouseEnter: (rating: number) => void,
+    onMouseLeave: () => void
+  ): JSX.Element => (
     <div style={{ display: "flex", gap: 4 }}>
-      {[1, 2, 3, 4, 5].map((i) => {
+      {[1, 2, 3, 4, 5].map((i: number) => {
         const active = i <= (hoverRating || currentRating);
         return (
           <FaStar
@@ -151,7 +186,9 @@ export default function CommentSection() {
           type="text"
           placeholder="Nama Anda"
           value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setForm({ ...form, name: e.target.value })
+          }
           required
           style={{
             width: "100%",
@@ -168,7 +205,9 @@ export default function CommentSection() {
         <textarea
           placeholder="Tulis komentar..."
           value={form.message}
-          onChange={(e) => setForm({ ...form, message: e.target.value })}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+            setForm({ ...form, message: e.target.value })
+          }
           required
           style={{
             width: "100%",
@@ -190,8 +229,8 @@ export default function CommentSection() {
           </p>
           {renderStars(
             form.rating,
-            (rating) => setForm({ ...form, rating }),
-            (i) => setHoverRating(i),
+            (rating: number) => setForm({ ...form, rating }),
+            (i: number) => setHoverRating(i),
             () => setHoverRating(0)
           )}
         </div>
@@ -241,7 +280,7 @@ export default function CommentSection() {
       </form>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        {comments.map((comment) => (
+        {comments.map((comment: Comment) => (
           <div
             key={comment._id}
             style={{
@@ -267,7 +306,7 @@ export default function CommentSection() {
             </div>
             {comment.rating > 0 && (
               <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
-                {Array.from({ length: comment.rating }).map((_, i) => (
+                {Array.from({ length: comment.rating }).map((_, i: number) => (
                   <FaStar key={i} size={16} style={{ color: "#FBBF24" }} />
                 ))}
               </div>

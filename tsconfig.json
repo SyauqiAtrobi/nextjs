@@ -12,21 +12,15 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "types": ["react", "react-dom"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "incremental": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "lib/mongodb.js",
-    "templates/LandingPage/components/CommentSection.tsx",
-    "templates/LandingPage/components/ChatBot.jsx",
-    "pages/_app.jsx"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
   "exclude": ["node_modules"]
 }

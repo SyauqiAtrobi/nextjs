@@ -1,35 +1,80 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "@/lib/mongodb";
+import type { MongoClient, Db, Collection, Document } from "mongodb";
+
+// Define the shape of a comment document
+interface CommentDoc extends Document {
+  name: string;
+  message: string;
+  rating?: number;
+  createdAt: Date;
+}
+
+// Define the response shape for GET
+interface GetCommentsResponse {
+  comments: CommentDoc[];
+  averageRating: number;
+  totalVoters: number;
+}
+
+// Define the request body shape for POST
+interface PostCommentBody {
+  name: string;
+  message: string;
+  rating: number;
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<
+    GetCommentsResponse | { message: string; error?: string }
+  >
 ) {
-  const client = await clientPromise;
-  const db = client.db("Dzull");
-  const collection = db.collection("comments");
+  // Ensure clientPromise is typed as Promise<MongoClient>
+  const client: MongoClient = await clientPromise;
+  const db: Db = client.db("Dzull");
+  const collection: Collection<CommentDoc> = db.collection("comments");
 
   if (req.method === "POST") {
-    const { name, message, rating } = req.body;
-    if (!name || !message || !rating) {
-      return res.status(400).json({ error: "Missing fields" });
+    const { name, message, rating } = req.body as PostCommentBody;
+    if (!name || !message || rating == null) {
+      return res
+        .status(400)
+        .json({
+          message: "Missing fields",
+          error: "name, message, and rating are required",
+        });
     }
-    await collection.insertOne({ name, message, rating });
+
+    // Insert with timestamp
+    await collection.insertOne({
+      name,
+      message,
+      rating,
+      createdAt: new Date(),
+    });
     return res.status(201).json({ message: "Comment saved" });
   }
 
   if (req.method === "GET") {
-    const comments = await collection.find({}).toArray();
-    const totalVoters = comments.length;
-    const totalRating = comments.reduce((sum, c) => sum + (c.rating || 0), 0);
-    const averageRating = totalVoters ? totalRating / totalVoters : 0;
+    // Fetch and type the comments array
+    const comments: CommentDoc[] = await collection.find({}).toArray();
+    const totalVoters: number = comments.length;
+    const totalRating: number = comments.reduce(
+      (sum: number, c: CommentDoc) => sum + (c.rating || 0),
+      0
+    );
+    const averageRating: number =
+      totalVoters > 0 ? totalRating / totalVoters : 0;
 
-    return res.status(200).json({
+    const response: GetCommentsResponse = {
       comments,
       averageRating,
       totalVoters,
-    });
+    };
+    return res.status(200).json(response);
   }
 
-  res.status(405).json({ message: "Method not allowed" });
+  res.setHeader("Allow", ["GET", "POST"]);
+  return res.status(405).json({ message: "Method not allowed" });
 }
